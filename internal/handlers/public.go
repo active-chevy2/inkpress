@@ -31,16 +31,16 @@ func (h *PublicHandler) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	totalPages := (total + 9 - 1) / 9
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = h.Cfg.BaseURL
 	data.Content = map[string]interface{}{
-		"Posts":       h.preparePosts(posts),
-		"Page":        page,
-		"TotalPages":  totalPages,
-		"HasPrev":     page > 1,
-		"HasNext":     page < totalPages,
-		"PrevPage":    page - 1,
-		"NextPage":    page + 1,
+		"Posts":      h.preparePosts(posts),
+		"Page":       page,
+		"TotalPages": totalPages,
+		"HasPrev":    page > 1,
+		"HasNext":    page < totalPages,
+		"PrevPage":   page - 1,
+		"NextPage":   page + 1,
 	}
 	h.Rendr.Render(w, "public/home", data)
 }
@@ -66,14 +66,14 @@ func (h *PublicHandler) Post(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		comments = nil
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = post.Title
 	data.Description = post.Excerpt
 	data.Content = map[string]interface{}{
-		"Post":          h.preparePost(post),
-		"HTMLBody":      markdown.Render(post.Body),
-		"Comments":      comments,
-		"CommentCount":  len(comments),
+		"Post":         h.preparePost(post),
+		"HTMLBody":     markdown.Render(post.Body),
+		"Comments":     comments,
+		"CommentCount": len(comments),
 	}
 	h.Rendr.Render(w, "public/post", data)
 }
@@ -96,22 +96,26 @@ func (h *PublicHandler) Tag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	totalPages := (total + 9 - 1) / 9
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = tag.Name
 	data.Content = map[string]interface{}{
-		"Tag":         tag,
-		"Posts":       h.preparePosts(posts),
-		"Page":        page,
-		"TotalPages":  totalPages,
-		"HasPrev":     page > 1,
-		"HasNext":     page < totalPages,
-		"PrevPage":    page - 1,
-		"NextPage":    page + 1,
+		"Tag":        tag,
+		"Posts":      h.preparePosts(posts),
+		"Page":       page,
+		"TotalPages": totalPages,
+		"HasPrev":    page > 1,
+		"HasNext":    page < totalPages,
+		"PrevPage":   page - 1,
+		"NextPage":   page + 1,
 	}
 	h.Rendr.Render(w, "public/tag", data)
 }
 
 func (h *PublicHandler) CommentSubmit(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/"+mux.Vars(r)["slug"]+"?error=csrf", http.StatusFound)
+		return
+	}
 	slug := mux.Vars(r)["slug"]
 	post, err := models.PostBySlug(h.DB, slug)
 	if err == models.ErrNotFound {
@@ -179,19 +183,20 @@ func (h *PublicHandler) RSS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PublicHandler) NotFound(w http.ResponseWriter, r *http.Request) {
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Not Found"
 	w.WriteHeader(http.StatusNotFound)
 	h.Rendr.Render(w, "public/404", data)
 }
 
-func (h *PublicHandler) baseData(r *http.Request) PageData {
+func (h *PublicHandler) baseData(w http.ResponseWriter, r *http.Request) PageData {
 	user := middleware.GetUser(r)
 	return PageData{
 		SiteName:  "InkPress",
 		BaseURL:   h.Cfg.BaseURL,
 		User:      user,
 		ActiveNav: "",
+		CSRFToken: h.Auth.GenerateCSRFToken(w, r),
 	}
 }
 
@@ -205,17 +210,17 @@ func (h *PublicHandler) preparePost(p *models.Post) map[string]interface{} {
 		pubDate = p.PublishedAt.Time.Format("January 2, 2006")
 	}
 	return map[string]interface{}{
-		"ID":           p.ID,
-		"Title":        p.Title,
-		"Slug":         p.Slug,
-		"Excerpt":      excerpt,
-		"CoverURL":     p.CoverURL,
-		"Status":       p.Status,
-		"AuthorName":   p.Author.Name,
-		"AuthorAvatar": p.Author.AvatarURL,
+		"ID":            p.ID,
+		"Title":         p.Title,
+		"Slug":          p.Slug,
+		"Excerpt":       excerpt,
+		"CoverURL":      p.CoverURL,
+		"Status":        p.Status,
+		"AuthorName":    p.Author.Name,
+		"AuthorAvatar":  p.Author.AvatarURL,
 		"PublishedDate": pubDate,
-		"Tags":         p.Tags,
-		"CommentCount": p.CommentCount,
+		"Tags":          p.Tags,
+		"CommentCount":  p.CommentCount,
 	}
 }
 
@@ -231,16 +236,16 @@ func (h *PublicHandler) preparePosts(posts []models.Post) []map[string]interface
 			pubDate = p.PublishedAt.Time.Format("January 2, 2006")
 		}
 		result = append(result, map[string]interface{}{
-			"ID":           p.ID,
-			"Title":        p.Title,
-			"Slug":         p.Slug,
-			"Excerpt":      excerpt,
-			"CoverURL":     p.CoverURL,
-			"AuthorName":   p.Author.Name,
-			"AuthorAvatar": p.Author.AvatarURL,
+			"ID":            p.ID,
+			"Title":         p.Title,
+			"Slug":          p.Slug,
+			"Excerpt":       excerpt,
+			"CoverURL":      p.CoverURL,
+			"AuthorName":    p.Author.Name,
+			"AuthorAvatar":  p.Author.AvatarURL,
 			"PublishedDate": pubDate,
-			"Tags":         p.Tags,
-			"CommentCount": p.CommentCount,
+			"Tags":          p.Tags,
+			"CommentCount":  p.CommentCount,
 		})
 	}
 	return result
