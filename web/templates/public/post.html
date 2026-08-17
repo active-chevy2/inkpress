@@ -47,6 +47,7 @@
     {{end}}
 
     <form class="comment-form" method="POST" action="/{{.Content.Post.Slug}}/comment">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <h3 class="comment-form-title">Leave a comment</h3>
         <div class="form-field">
             <label for="author">Name</label>
