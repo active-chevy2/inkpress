@@ -14,20 +14,24 @@
             <td class="admin-table-actions">
                 {{if ne .Status "approved"}}
                 <form method="POST" action="/admin/comments/{{.ID}}/approve" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
                     <button type="submit" class="admin-link">Approve</button>
                 </form>
                 {{end}}
                 {{if ne .Status "pending"}}
                 <form method="POST" action="/admin/comments/{{.ID}}/pending" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
                     <button type="submit" class="admin-link">Pending</button>
                 </form>
                 {{end}}
                 {{if ne .Status "spam"}}
                 <form method="POST" action="/admin/comments/{{.ID}}/spam" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
                     <button type="submit" class="admin-link">Spam</button>
                 </form>
                 {{end}}
                 <form method="POST" action="/admin/comments/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Delete this comment?')">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
                     <button type="submit" class="admin-link-danger">Delete</button>
                 </form>
             </td>
