@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -35,7 +36,7 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userCount, _ := models.UserCount(h.DB)
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Sign In"
 	if userCount == 0 {
 		data.Content = map[string]interface{}{"FirstUser": true}
@@ -49,6 +50,10 @@ func (h *AdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) LoginSubmit(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/login?error=csrf", http.StatusFound)
+		return
+	}
 	r.ParseForm()
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	password := r.FormValue("password")
@@ -82,7 +87,7 @@ func (h *AdminHandler) Register(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/admin/login", http.StatusFound)
 			return
 		}
-		data := h.baseData(r)
+		data := h.baseData(w, r)
 		data.Title = "Create Admin Account"
 		data.Flash = "Welcome! Create the first account — it will be the admin."
 		data.Content = map[string]interface{}{"InviteCode": "", "Email": "", "FirstUser": true}
@@ -92,20 +97,24 @@ func (h *AdminHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	inv, err := models.InvitationByCode(h.DB, code)
 	if err != nil {
-		data := h.baseData(r)
+		data := h.baseData(w, r)
 		data.Title = "Invalid Invitation"
 		data.FlashError = "This invitation link is invalid or has already been used."
 		data.Content = map[string]interface{}{"InviteCode": "", "Email": "", "FirstUser": false}
 		h.Rendr.Render(w, "admin/register", data)
 		return
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Create Account"
 	data.Content = map[string]interface{}{"InviteCode": inv.Code, "Email": inv.Email, "FirstUser": false}
 	h.Rendr.Render(w, "admin/register", data)
 }
 
 func (h *AdminHandler) RegisterSubmit(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/register?error=csrf", http.StatusFound)
+		return
+	}
 	r.ParseForm()
 	code := strings.TrimSpace(r.FormValue("invite_code"))
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
@@ -190,14 +199,14 @@ func (h *AdminHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 			draftCount++
 		}
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Dashboard"
 	data.ActiveNav = "dashboard"
 	data.Content = map[string]interface{}{
-		"Posts":          h.prepareAdminPosts(posts),
-		"PublishedCount": publishedCount,
-		"DraftCount":     draftCount,
-		"CommentCount":   len(comments),
+		"Posts":           h.prepareAdminPosts(posts),
+		"PublishedCount":  publishedCount,
+		"DraftCount":      draftCount,
+		"CommentCount":    len(comments),
 		"PendingComments": pendingCount,
 	}
 	h.Rendr.Render(w, "admin/dashboard", data)
@@ -209,7 +218,7 @@ func (h *AdminHandler) PostsList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Posts"
 	data.ActiveNav = "posts"
 	data.Content = map[string]interface{}{"Posts": h.prepareAdminPosts(posts)}
@@ -218,7 +227,7 @@ func (h *AdminHandler) PostsList(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) PostNew(w http.ResponseWriter, r *http.Request) {
 	tags, _ := models.AllTags(h.DB)
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "New Post"
 	data.ActiveNav = "posts"
 	data.Content = map[string]interface{}{
@@ -249,13 +258,15 @@ func (h *AdminHandler) PostEdit(w http.ResponseWriter, r *http.Request) {
 	for _, t := range post.Tags {
 		tagNames = append(tagNames, t.Name)
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Edit Post"
 	data.ActiveNav = "posts"
 	pubDate := ""
 	if post.PublishedAt.Valid {
 		pubDate = post.PublishedAt.Time.Format("2006-01-02T15:04")
 	}
+	// Check for cover URL error flag
+	coverErr := r.URL.Query().Get("error") == "cover"
 	data.Content = map[string]interface{}{
 		"Post": map[string]interface{}{
 			"ID":          post.ID,
@@ -268,13 +279,18 @@ func (h *AdminHandler) PostEdit(w http.ResponseWriter, r *http.Request) {
 			"Tags":        strings.Join(tagNames, ", "),
 			"PublishedAt": pubDate,
 		},
-		"AllTags": tags,
-		"IsEdit":  true,
+		"AllTags":  tags,
+		"IsEdit":   true,
+		"CoverErr": coverErr,
 	}
 	h.Rendr.Render(w, "admin/post-edit", data)
 }
 
 func (h *AdminHandler) PostSave(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/posts?error=csrf", http.StatusFound)
+		return
+	}
 	r.ParseForm()
 	title := strings.TrimSpace(r.FormValue("title"))
 	if title == "" {
@@ -284,6 +300,19 @@ func (h *AdminHandler) PostSave(w http.ResponseWriter, r *http.Request) {
 	excerpt := strings.TrimSpace(r.FormValue("excerpt"))
 	body := r.FormValue("body")
 	coverURL := strings.TrimSpace(r.FormValue("cover_url"))
+	// Validate cover URL scheme
+	if coverURL != "" {
+		u, err := url.Parse(coverURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+			idStr := r.FormValue("id")
+			if idStr != "" {
+				http.Redirect(w, r, "/admin/posts/"+idStr+"?error=cover", http.StatusFound)
+			} else {
+				http.Redirect(w, r, "/admin/posts/new?error=cover", http.StatusFound)
+			}
+			return
+		}
+	}
 	status := r.FormValue("status")
 	if status != "published" && status != "scheduled" && status != "draft" {
 		status = "draft"
@@ -339,6 +368,10 @@ func (h *AdminHandler) PostSave(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) PostDelete(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/posts?error=csrf", http.StatusFound)
+		return
+	}
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.NotFound(w, r)
@@ -356,7 +389,7 @@ func (h *AdminHandler) CommentsList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		comments = nil
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Comments"
 	data.ActiveNav = "comments"
 	data.Content = map[string]interface{}{"Comments": comments}
@@ -364,6 +397,10 @@ func (h *AdminHandler) CommentsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) CommentAction(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/comments?error=csrf", http.StatusFound)
+		return
+	}
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		http.NotFound(w, r)
@@ -389,7 +426,7 @@ func (h *AdminHandler) InvitationsList(w http.ResponseWriter, r *http.Request) {
 		invs = nil
 	}
 	users, _ := models.AllUsers(h.DB)
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Invitations"
 	data.ActiveNav = "invitations"
 	if r.URL.Query().Get("created") == "1" {
@@ -400,6 +437,10 @@ func (h *AdminHandler) InvitationsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) InvitationCreate(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/invitations?error=csrf", http.StatusFound)
+		return
+	}
 	r.ParseForm()
 	email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 	user := middleware.GetUser(r)
@@ -433,7 +474,7 @@ func (h *AdminHandler) UploadsList(w http.ResponseWriter, r *http.Request) {
 	if uploads == nil {
 		uploads = []models.Upload{}
 	}
-	data := h.baseData(r)
+	data := h.baseData(w, r)
 	data.Title = "Uploads"
 	data.ActiveNav = "uploads"
 	data.Content = map[string]interface{}{"Uploads": uploads, "UploadPath": h.Cfg.BaseURL + "/uploads/"}
@@ -441,6 +482,10 @@ func (h *AdminHandler) UploadsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) UploadCreate(w http.ResponseWriter, r *http.Request) {
+	if !h.Auth.ValidateCSRFToken(r) {
+		http.Redirect(w, r, "/admin/uploads?error=csrf", http.StatusFound)
+		return
+	}
 	r.ParseForm()
 	_ = r.ParseMultipartForm(10 << 20)
 	file, header, err := r.FormFile("file")
@@ -487,12 +532,13 @@ func (h *AdminHandler) UploadCreate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/uploads?uploaded=1", http.StatusFound)
 }
 
-func (h *AdminHandler) baseData(r *http.Request) PageData {
+func (h *AdminHandler) baseData(w http.ResponseWriter, r *http.Request) PageData {
 	user := middleware.GetUser(r)
 	return PageData{
-		SiteName: "InkPress",
-		BaseURL:  h.Cfg.BaseURL,
-		User:     user,
+		SiteName:  "InkPress",
+		BaseURL:   h.Cfg.BaseURL,
+		User:      user,
+		CSRFToken: h.Auth.GenerateCSRFToken(w, r),
 	}
 }
 
@@ -508,15 +554,15 @@ func (h *AdminHandler) prepareAdminPosts(posts []models.Post) []map[string]inter
 			excerpt = markdown.Excerpt(p.Body, 100)
 		}
 		result = append(result, map[string]interface{}{
-			"ID":           p.ID,
-			"Title":        p.Title,
-			"Slug":         p.Slug,
-			"Excerpt":      excerpt,
-			"Status":       p.Status,
-			"AuthorName":   p.Author.Name,
+			"ID":            p.ID,
+			"Title":         p.Title,
+			"Slug":          p.Slug,
+			"Excerpt":       excerpt,
+			"Status":        p.Status,
+			"AuthorName":    p.Author.Name,
 			"PublishedDate": pubDate,
-			"UpdatedDate":  p.UpdatedAt.Format("Jan 2, 2006"),
-			"Tags":         p.Tags,
+			"UpdatedDate":   p.UpdatedAt.Format("Jan 2, 2006"),
+			"Tags":          p.Tags,
 		})
 	}
 	return result
