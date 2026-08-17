@@ -70,6 +70,7 @@ type PageData struct {
 	Content     interface{}
 	Flash       string
 	FlashError  string
+	CSRFToken   string // CSRF protection token
 }
 
 func formatDate(t time.Time) string {
