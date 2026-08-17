@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="admin-list-header">
+    <a href="/admin/posts/new" class="admin-button">+ New Post</a>
+</div>
+<table class="admin-table">
+    <thead>
+        <tr><th>Title</th><th>Status</th><th>Author</th><th>Published</th><th>Updated</th><th></th></tr>
+    </thead>
+    <tbody>
+        {{range .Content.Posts}}
+        <tr>
+            <td><a href="/admin/posts/{{.ID}}">{{.Title}}</a></td>
+            <td><span class="status-badge status-{{.Status}}">{{.Status}}</span></td>
+            <td>{{.AuthorName}}</td>
+            <td>{{.PublishedDate}}</td>
+            <td>{{.UpdatedDate}}</td>
+            <td class="admin-table-actions">
+                <a href="/{{.Slug}}" target="_blank" class="admin-link">View</a>
+                <form method="POST" action="/admin/posts/{{.ID}}/delete" onsubmit="return confirm('Delete this post? This cannot be undone.')">
+                    <button type="submit" class="admin-link-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" class="empty-row">No posts yet. Click "New Post" to create one.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

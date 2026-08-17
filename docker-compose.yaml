@@ -1,0 +1,41 @@
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS:-inkpress_root}
+      MARIADB_DATABASE: ${DB_NAME:-inkpress}
+      MARIADB_USER: ${DB_USER:-inkpress}
+      MARIADB_PASSWORD: ${DB_PASS:-inkpress}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: ${DB_USER:-inkpress}
+      DB_PASS: ${DB_PASS:-inkpress}
+      DB_NAME: ${DB_NAME:-inkpress}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-please-use-a-long-random-string}
+      PORT: "8080"
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      UPLOADS_DIR: /app/web/static/uploads
+    volumes:
+      - uploads_data:/app/web/static/uploads
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+volumes:
+  mariadb_data:
+  uploads_data:

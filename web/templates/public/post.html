@@ -1,0 +1,62 @@
+{{define "content"}}
+<article class="article">
+    <header class="article-header">
+        {{if .Content.Post.Tags}}
+        <div class="article-tags">
+            {{range .Content.Post.Tags}}<a href="/tag/{{.Slug}}" class="article-tag">{{.Name}}</a>{{end}}
+        </div>
+        {{end}}
+        <h1 class="article-title">{{.Content.Post.Title}}</h1>
+        {{if .Content.Post.Excerpt}}<p class="article-excerpt">{{.Content.Post.Excerpt}}</p>{{end}}
+        <div class="article-meta">
+            <span class="article-author">{{.Content.Post.AuthorName}}</span>
+            {{if .Content.Post.PublishedDate}}
+            <span>—</span>
+            <time>{{.Content.Post.PublishedDate}}</time>
+            {{end}}
+            {{if .Content.CommentCount}}<span>·</span><span>{{.Content.CommentCount}} comments</span>{{end}}
+        </div>
+    </header>
+
+    {{if .Content.Post.CoverURL}}
+    <div class="article-cover">
+        <img src="{{.Content.Post.CoverURL}}" alt="{{.Content.Post.Title}}" loading="lazy">
+    </div>
+    {{end}}
+
+    <div class="article-content">
+        {{.Content.HTMLBody | safeHTML}}
+    </div>
+</article>
+
+<section class="comments">
+    <h2 class="comments-title">Comments ({{.Content.CommentCount}})</h2>
+
+    {{if .Content.Comments}}
+    <div class="comments-list">
+        {{range .Content.Comments}}
+        <div class="comment">
+            <div class="comment-author">{{.Author}}</div>
+            <div class="comment-body">{{.Body}}</div>
+            <div class="comment-meta"><time>{{.CreatedAt | formatDate}}</time></div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p class="comments-empty">No comments yet. Be the first to share your thoughts.</p>
+    {{end}}
+
+    <form class="comment-form" method="POST" action="/{{.Content.Post.Slug}}/comment">
+        <h3 class="comment-form-title">Leave a comment</h3>
+        <div class="form-field">
+            <label for="author">Name</label>
+            <input type="text" id="author" name="author" required maxlength="255">
+        </div>
+        <div class="form-field">
+            <label for="body">Comment</label>
+            <textarea id="body" name="body" rows="4" required maxlength="5000"></textarea>
+        </div>
+        <button type="submit" class="site-button">Post Comment</button>
+    </form>
+</section>
+{{end}}

@@ -1,0 +1,39 @@
+{{define "content"}}
+<div class="post-feed">
+    {{range .Content.Posts}}
+    <article class="post-card">
+        {{if .CoverURL}}
+        <a href="/{{.Slug}}" class="post-card-image">
+            <img src="{{.CoverURL}}" alt="{{.Title}}" loading="lazy">
+        </a>
+        {{end}}
+        <div class="post-card-body">
+            {{if .Tags}}
+            <div class="post-card-tags">
+                {{range .Tags}}<span class="post-card-tag">{{.Name}}</span>{{end}}
+            </div>
+            {{end}}
+            <h2 class="post-card-title"><a href="/{{.Slug}}">{{.Title}}</a></h2>
+            <p class="post-card-excerpt">{{.Excerpt}}</p>
+            <div class="post-card-meta">
+                <span>{{.AuthorName}}</span>
+                <span>—</span>
+                <time>{{.PublishedDate}}</time>
+                {{if .CommentCount}}<span>·</span><span>{{.CommentCount}} comments</span>{{end}}
+            </div>
+        </div>
+    </article>
+    {{else}}
+    <div class="post-empty">
+        <p>No posts published yet.</p>
+    </div>
+    {{end}}
+</div>
+
+{{if or .Content.HasPrev .Content.HasNext}}
+<nav class="pagination">
+    {{if .Content.HasPrev}}<a href="/page/{{.Content.PrevPage}}" class="pagination-prev">← Newer</a>{{end}}
+    {{if .Content.HasNext}}<a href="/page/{{.Content.NextPage}}" class="pagination-next">Older →</a>{{end}}
+</nav>
+{{end}}
+{{end}}

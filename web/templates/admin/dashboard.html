@@ -1,0 +1,46 @@
+{{define "content"}}
+<div class="dashboard-grid">
+    <a href="/admin/posts" class="dashboard-card">
+        <span class="dashboard-card-value">{{.Content.PublishedCount}}</span>
+        <span class="dashboard-card-label">Published</span>
+    </a>
+    <a href="/admin/posts" class="dashboard-card">
+        <span class="dashboard-card-value">{{.Content.DraftCount}}</span>
+        <span class="dashboard-card-label">Drafts</span>
+    </a>
+    <a href="/admin/comments" class="dashboard-card">
+        <span class="dashboard-card-value">{{.Content.CommentCount}}</span>
+        <span class="dashboard-card-label">Comments</span>
+    </a>
+    <a href="/admin/comments" class="dashboard-card">
+        <span class="dashboard-card-value">{{.Content.PendingComments}}</span>
+        <span class="dashboard-card-label">Pending</span>
+    </a>
+</div>
+
+<div class="dashboard-section">
+    <div class="dashboard-section-header">
+        <h2>Recent Posts</h2>
+        <a href="/admin/posts/new" class="admin-button-sm">+ New Post</a>
+    </div>
+    <table class="admin-table">
+        <thead>
+            <tr><th>Title</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+            {{$posts := .Content.Posts}}
+            {{range $i, $p := $posts}}
+            {{if lt $i 5}}
+            <tr>
+                <td><a href="/admin/posts/{{$p.ID}}">{{$p.Title}}</a></td>
+                <td><span class="status-badge status-{{$p.Status}}">{{$p.Status}}</span></td>
+                <td>{{$p.PublishedDate}}</td>
+            </tr>
+            {{end}}
+            {{else}}
+            <tr><td colspan="3" class="empty-row">No posts yet.</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{if .Title}}{{.Title}} — {{end}}{{.SiteName}} Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="admin">
+{{if .User}}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <a href="/admin/dashboard" class="admin-sidebar-logo">{{.SiteName}}</a>
+        <nav class="admin-sidebar-nav">
+            <a href="/admin/dashboard" {{if eq .ActiveNav "dashboard"}}class="active"{{end}}>Dashboard</a>
+            <a href="/admin/posts" {{if eq .ActiveNav "posts"}}class="active"{{end}}>Posts</a>
+            <a href="/admin/comments" {{if eq .ActiveNav "comments"}}class="active"{{end}}>Comments</a>
+            <a href="/admin/invitations" {{if eq .ActiveNav "invitations"}}class="active"{{end}}>Invitations</a>
+            <a href="/admin/uploads" {{if eq .ActiveNav "uploads"}}class="active"{{end}}>Uploads</a>
+        </nav>
+        <div class="admin-sidebar-bottom">
+            <a href="/" target="_blank">View Site →</a>
+            <a href="/admin/logout">Sign Out</a>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <h1>{{.Title}}</h1>
+            <div class="admin-header-actions">
+                {{if .User}}
+                <span class="admin-user-name">{{.User.Name}}</span>
+                {{end}}
+            </div>
+        </header>
+
+        {{if .Flash}}<div class="admin-flash admin-flash-success">{{.Flash}}</div>{{end}}
+        {{if .FlashError}}<div class="admin-flash admin-flash-error">{{.FlashError}}</div>{{end}}
+
+        <div class="admin-content">
+            {{template "content" .}}
+        </div>
+    </main>
+</div>
+{{else}}
+{{template "content" .}}
+{{end}}
+<script src="/static/js/app.js"></script>
+</body>
+</html>

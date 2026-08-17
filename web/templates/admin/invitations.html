@@ -1,0 +1,61 @@
+{{define "content"}}
+<div class="invite-create">
+    <h2>Create Invitation</h2>
+    <p class="invite-help">Generate a one-time sign-up link. The first person to register becomes the admin. Share the link with people you want to invite as authors.</p>
+    <form method="POST" action="/admin/invitations/create" class="invite-form">
+        <div class="form-field">
+            <label for="email">Email (optional — for your reference)</label>
+            <input type="email" id="email" name="email" placeholder="colleague@example.com">
+        </div>
+        <button type="submit" class="admin-button">Generate Link</button>
+    </form>
+</div>
+
+<h2>Active Invitations</h2>
+<table class="admin-table">
+    <thead>
+        <tr><th>Code</th><th>Email</th><th>Status</th><th>Created</th><th>Link</th></tr>
+    </thead>
+    <tbody>
+        {{range .Content.Invitations}}
+        <tr>
+            <td class="mono">{{.Code}}</td>
+            <td>{{.Email}}</td>
+            <td>
+                {{if .UsedBy.Valid}}<span class="status-badge status-used">Used</span>
+                {{else}}<span class="status-badge status-active">Active</span>{{end}}
+            </td>
+            <td>{{.CreatedAt | formatDate}}</td>
+            <td>
+                {{if not .UsedBy.Valid}}
+                <a href="{{$.BaseURL}}/admin/register?invite={{.Code}}" target="_blank" class="admin-link">View Link</a>
+                {{else}}
+                <span class="muted">—</span>
+                {{end}}
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="5" class="empty-row">No invitations created yet.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+
+<h2>Users</h2>
+<table class="admin-table">
+    <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr>
+    </thead>
+    <tbody>
+        {{range .Content.Users}}
+        <tr>
+            <td>{{.Name}}</td>
+            <td>{{.Email}}</td>
+            <td><span class="role-badge role-{{.Role}}">{{.Role}}</span></td>
+            <td>{{.CreatedAt | formatDate}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="4" class="empty-row">No users.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

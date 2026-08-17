@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{if .Title}}{{.Title}} — {{end}}{{.SiteName}}</title>
+    {{if .Description}}<meta name="description" content="{{.Description}}">{{end}}
+    <link rel="stylesheet" href="/static/css/screen.css">
+    <link rel="alternate" type="application/rss+xml" title="{{.SiteName}}" href="/rss.xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="site">
+<div class="site-viewport">
+    <header class="site-nav">
+        <div class="site-nav-inner">
+            <a href="/" class="site-nav-logo">{{.SiteName}}</a>
+            <nav class="site-nav-menu">
+                <a href="/">Home</a>
+                <a href="/rss.xml">RSS</a>
+                {{if .User}}
+                <a href="/admin/dashboard">Dashboard</a>
+                {{end}}
+            </nav>
+            <div class="site-nav-actions">
+                {{if .User}}
+                <a href="/admin/dashboard" class="site-button-sm">Dashboard</a>
+                {{else}}
+                <a href="/admin/login" class="site-button-sm">Sign In</a>
+                {{end}}
+            </div>
+        </div>
+    </header>
+
+    <main class="site-main">
+        {{template "content" .}}
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <span>&copy; {{currentYear}} {{.SiteName}}</span>
+            <nav class="site-footer-nav">
+                <a href="/">Home</a>
+                <a href="/rss.xml">RSS</a>
+            </nav>
+        </div>
+    </footer>
+</div>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

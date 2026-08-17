@@ -1,0 +1,77 @@
+{{define "content"}}
+{{$post := .Content.Post}}
+{{if eq .Content.IsEdit false}}
+<h2 class="page-subtitle">Create a new post</h2>
+{{else}}
+<h2 class="page-subtitle">Editing: {{$post.Title}}</h2>
+{{end}}
+
+{{if eq (index .Content "Error") "title"}}<div class="admin-flash admin-flash-error">Title is required.</div>{{end}}
+{{if eq (index .Content "Error") "failed"}}<div class="admin-flash admin-flash-error">An error occurred while saving.</div>{{end}}
+
+<form method="POST" action="/admin/posts/save" class="post-edit-form">
+    {{if .Content.IsEdit}}<input type="hidden" name="id" value="{{$post.ID}}">{{end}}
+    <div class="post-edit-layout">
+        <div class="post-edit-main">
+            <div class="form-field">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" value="{{$post.Title}}" required autofocus class="post-title-input">
+            </div>
+            <div class="form-field">
+                <label for="excerpt">Excerpt</label>
+                <textarea id="excerpt" name="excerpt" rows="2" placeholder="A short summary shown on cards and search results.">{{$post.Excerpt}}</textarea>
+            </div>
+            <div class="form-field">
+                <label for="body">Content (Markdown)</label>
+                <textarea id="body" name="body" rows="20" class="post-body-input">{{$post.Body}}</textarea>
+            </div>
+        </div>
+
+        <div class="post-edit-sidebar">
+            <div class="post-edit-panel">
+                <h3>Status</h3>
+                <select name="status" id="status">
+                    <option value="draft" {{if eq $post.Status "draft"}}selected{{end}}>Draft</option>
+                    <option value="published" {{if eq $post.Status "published"}}selected{{end}}>Published</option>
+                    <option value="scheduled" {{if eq $post.Status "scheduled"}}selected{{end}}>Scheduled</option>
+                </select>
+                <div class="form-field" id="publish-date-field">
+                    <label for="published_at">Publish Date</label>
+                    <input type="datetime-local" id="published_at" name="published_at" value="{{$post.PublishedAt}}">
+                </div>
+            </div>
+
+            <div class="post-edit-panel">
+                <h3>Cover Image</h3>
+                <div class="form-field">
+                    <label for="cover_url">Image URL</label>
+                    <input type="url" id="cover_url" name="cover_url" value="{{$post.CoverURL}}" placeholder="https://...">
+                </div>
+                {{if $post.CoverURL}}
+                <img src="{{$post.CoverURL}}" alt="Cover preview" class="cover-preview">
+                {{end}}
+            </div>
+
+            <div class="post-edit-panel">
+                <h3>Tags</h3>
+                <div class="form-field">
+                    <label for="tags">Tags (comma-separated)</label>
+                    <input type="text" id="tags" name="tags" value="{{$post.Tags}}" placeholder="technology, writing, news">
+                </div>
+                {{if .Content.AllTags}}
+                <div class="tag-suggestions">
+                    {{range .Content.AllTags}}<span class="tag-suggestion" onclick="addTag(this)">{{.Name}}</span>{{end}}
+                </div>
+                {{end}}
+            </div>
+
+            <div class="post-edit-actions">
+                <button type="submit" class="admin-button">{{if .Content.IsEdit}}Save Changes{{else}}Create Post{{end}}</button>
+                {{if .Content.IsEdit}}
+                <a href="/{{$post.Slug}}" target="_blank" class="admin-button-sm">Preview</a>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</form>
+{{end}}

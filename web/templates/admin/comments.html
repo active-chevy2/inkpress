@@ -1,0 +1,40 @@
+{{define "content"}}
+<table class="admin-table">
+    <thead>
+        <tr><th>Author</th><th>Comment</th><th>Post</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {{range .Content.Comments}}
+        <tr>
+            <td>{{.Author}}</td>
+            <td class="comment-text">{{.Body | truncate 80}}</td>
+            <td><a href="/{{.PostTitle}}">{{.PostTitle}}</a></td>
+            <td><span class="status-badge status-{{.Status}}">{{.Status}}</span></td>
+            <td>{{.CreatedAt | formatDate}}</td>
+            <td class="admin-table-actions">
+                {{if ne .Status "approved"}}
+                <form method="POST" action="/admin/comments/{{.ID}}/approve" style="display:inline">
+                    <button type="submit" class="admin-link">Approve</button>
+                </form>
+                {{end}}
+                {{if ne .Status "pending"}}
+                <form method="POST" action="/admin/comments/{{.ID}}/pending" style="display:inline">
+                    <button type="submit" class="admin-link">Pending</button>
+                </form>
+                {{end}}
+                {{if ne .Status "spam"}}
+                <form method="POST" action="/admin/comments/{{.ID}}/spam" style="display:inline">
+                    <button type="submit" class="admin-link">Spam</button>
+                </form>
+                {{end}}
+                <form method="POST" action="/admin/comments/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Delete this comment?')">
+                    <button type="submit" class="admin-link-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" class="empty-row">No comments yet.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

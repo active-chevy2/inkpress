@@ -1,0 +1,10 @@
+templates/
+.git/
+.gitignore
+.env
+.env.local
+web/static/uploads/
+*.md
+Dockerfile
+docker-compose.yaml
+.gitkeep
