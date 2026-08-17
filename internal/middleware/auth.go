@@ -13,6 +13,7 @@ import (
 type contextKey string
 
 const UserKey contextKey = "user"
+const csrfCookieName = "inkpress_csrf"
 
 type Store interface {
 	GetUserBySession(token string) (*models.User, error)
@@ -116,6 +117,40 @@ func (a *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// GenerateCSRFToken sets a CSRF cookie and returns the token value.
+func (a *AuthMiddleware) GenerateCSRFToken(w http.ResponseWriter, r *http.Request) string {
+	cookie, err := r.Cookie(csrfCookieName)
+	var token string
+	if err == nil && cookie.Value != "" {
+		token = cookie.Value
+	} else {
+		token = generateToken()
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     csrfCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   86400, // 1 day
+	})
+	return token
+}
+
+// ValidateCSRFToken compares the cookie token with the form value.
+func (a *AuthMiddleware) ValidateCSRFToken(r *http.Request) bool {
+	cookie, err := r.Cookie(csrfCookieName)
+	if err != nil {
+		return false
+	}
+	formToken := r.FormValue("csrf_token")
+	if formToken == "" {
+		return false
+	}
+	return cookie.Value == formToken
 }
 
 func setUserContext(r *http.Request, user *models.User) *http.Request {
