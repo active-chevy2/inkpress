@@ -5,6 +5,7 @@
         {{if .FlashError}}<div class="admin-flash admin-flash-error">{{.FlashError}}</div>{{end}}
         <h1 class="login-title">{{.Title}}</h1>
         <form method="POST" action="/admin/register" class="login-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <input type="hidden" name="invite_code" value="{{.Content.InviteCode}}">
             <div class="form-field">
                 <label for="name">Name</label>
