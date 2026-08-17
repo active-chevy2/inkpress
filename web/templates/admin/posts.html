@@ -17,6 +17,7 @@
             <td class="admin-table-actions">
                 <a href="/{{.Slug}}" target="_blank" class="admin-link">View</a>
                 <form method="POST" action="/admin/posts/{{.ID}}/delete" onsubmit="return confirm('Delete this post? This cannot be undone.')">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
                     <button type="submit" class="admin-link-danger">Delete</button>
                 </form>
             </td>
