@@ -8,8 +8,10 @@
 
 {{if eq (index .Content "Error") "title"}}<div class="admin-flash admin-flash-error">Title is required.</div>{{end}}
 {{if eq (index .Content "Error") "failed"}}<div class="admin-flash admin-flash-error">An error occurred while saving.</div>{{end}}
+{{if .Content.CoverErr}}<div class="admin-flash admin-flash-error">Cover image URL must be a valid HTTP/HTTPS URL.</div>{{end}}
 
 <form method="POST" action="/admin/posts/save" class="post-edit-form">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     {{if .Content.IsEdit}}<input type="hidden" name="id" value="{{$post.ID}}">{{end}}
     <div class="post-edit-layout">
         <div class="post-edit-main">
